@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Fonts bundled under launcher/fonts/ (both OFL):
-- Cinzel: roman capitals close to the Uncharted logo (the brand in the sidebar);
-- M PLUS 1p: a clean sans close to the PS3 system font, for the game names and headings."""
+"""Cinzel (OFL) — roman capitals close to the Uncharted logo; bundled under launcher/fonts/."""
 from pathlib import Path
 import sys
 
