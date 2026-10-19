@@ -84,7 +84,10 @@ FSR 4 assets from [FireBurn/Q2RTX](https://github.com/FireBurn/Q2RTX), the
 [Pillow](https://python-pillow.org) and the Cinzel font (SIL Open Font License).
 
 NVIDIA, GeForce RTX and DLSS are trademarks of NVIDIA Corporation. Some optional launcher images
-are community artwork from SteamGridDB. No game data is included.
+are community artwork from SteamGridDB. The default covers use photographs from Serg Alesenko,
+Matthew Solomon and AXP Photography under the [Pexels license](https://www.pexels.com/license/);
+their source links are included in `packaging/windows/licenses/Pexels-PHOTOS.txt`. The icon is
+original artwork; no official game art is included.
 
 ## License
 
