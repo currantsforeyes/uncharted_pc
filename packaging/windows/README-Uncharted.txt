@@ -37,6 +37,7 @@ Starting
   C Circle, F Square, E Triangle, Q/G L1/R1, Left Shift/V L3/R3, arrows and wheel d-pad,
   Escape/Enter Options, Tab touchpad. The cursor stays in the game window; hold Left Alt to
   free it. Insert opens the in-game settings menu. Bindings are saved in input.ini.
+  Mouse look works in all three games, aiming included, on game versions 1.00 and 1.02.
 - Saves page -> Export backup (.zip) creates a portable archive of save data and trophies that
   you can upload to Google Drive. Restore backup (.zip) accepts that archive and backs up the
   current data before replacing it. Close the game before either action.
