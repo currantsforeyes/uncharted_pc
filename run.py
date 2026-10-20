@@ -157,7 +157,28 @@ def main():
     env['BB_LOADEXEC_FILE'] = str(loadexec)
     guest_argv = None
     all_cheats = env.setdefault('BB_CHEATS_ALL', env.get('BB_CHEATS', ''))
+    # The player's own choice of these wins; the defaults are the ones 0.3.8 ships per game.
+    player_merge = env.get('BB_GPU_MERGE')
+    player_tiny = env.get('BB_TINY_READBACK')
+    player_copy = env.get('BB_SCALAR_COPY64_SYNC')
     while True:
+        # Uncharted 2 reads results of GPU work (grenade explosions, vehicle damage, the convoy of
+        # chapter 21) from memory it also writes, so it runs with accurate GPU memory
+        # (BB_GPU_MERGE=0) unless the player chose otherwise. Its aim and turret blur reads tiny
+        # render results back (BB_TINY_READBACK, about 13% elsewhere), and its mesh raycaster
+        # copies must land in guest memory (iSubMesh after checkpoints): BB_SCALAR_COPY64_SYNC=2
+        # with the copies deferred. U1 and U3 pay for none of it: in U3's Cartagena square the
+        # copies alone cost 94 to 54 FPS.
+        if player_merge is None:
+            if exe == EXECUTABLES['u2']:
+                env['BB_GPU_MERGE'] = '0'
+            else:
+                env.pop('BB_GPU_MERGE', None)
+        if player_tiny is None:
+            env['BB_TINY_READBACK'] = '1' if exe == EXECUTABLES['u2'] else '0'
+        if player_copy is None:
+            env['BB_SCALAR_COPY64_SYNC'] = '2' if exe == EXECUTABLES['u2'] else '0'
+            env['BB_SCALAR_COPY64_DEFER'] = '1' if exe == EXECUTABLES['u2'] else '0'
         game, file = locate(env, exe)
         if not game:
             fail('Set BB_GAME_DIR to the game folder (the one with eboot.bin).')
