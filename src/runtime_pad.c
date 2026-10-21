@@ -740,6 +740,13 @@ static const RuntimeGuestCallback guest_callbacks[]={
     {"CUE table fill",
       "55 41 57 41 56 41 55 41 54 53 49 b9 00 24 00 0d 10 00 00 00 48 c7 07 00 00 00 00 45 31 f6",
       0, 5, cue_table_pretouch, NULL},
+    /* The same start, for builds linked with the red-zone fix (#403): it moves the 7-byte store
+     * at +0x14 to a trampoline (lea rsp, [rsp-0x80]; the store; lea rsp, [rsp+0x80]) and leaves a
+     * jump and two int3 in its place, so the exact bytes above never match. The move-to-r9 word
+     * still makes the site unique. */
+    {"CUE table fill",
+      "55 41 57 41 56 41 55 41 54 53 49 b9 00 24 00 0d 10 00 00 00 ?? ?? ?? ?? ?? ?? ?? 45 31 f6",
+      0, 5, cue_table_pretouch, NULL},
 };
 const RuntimeGuestCallback *runtime_guest_callbacks(size_t *count) {
     *count=sizeof(guest_callbacks)/sizeof(*guest_callbacks);
