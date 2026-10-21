@@ -88,6 +88,9 @@ AA_SHARPNESS = [('0', 'Off'), ('0.2', 'Low'), ('0.4', 'Medium'), ('0.7', 'High')
 # Frames generated between two of the game's (BB_FRAME_GEN, BB_FRAME_GEN_MULTIPLIER).
 FRAME_GENERATION = [('off', 'Off'), ('fsr3', 'AMD FSR 3 Frame Generation (any GPU)'),
                     ('dlss', 'NVIDIA DLSS Frame Generation (GeForce RTX 40/50)')]
+BUTTON_PROMPTS = [('auto', 'Automatic (follows the device you used last)'),
+                  ('keyboard', 'Keyboard and mouse keys'), ('xbox', 'Xbox buttons'),
+                  ('0', "PlayStation buttons (the game's own)")]
 FRAME_GEN_MULTIPLIERS = [('2', '2× (one generated frame)'), ('3', '3× (DLSS on GeForce RTX 50)'),
                          ('4', '4× (DLSS on GeForce RTX 50)')]
 # Controls (input.ini, read by the game: src/runtime_pad.c). Actions with their PS4 names, the
@@ -150,6 +153,7 @@ APP_DEFAULTS = {'game_dir': '', 'game_dir_u1': '', 'game_dir_u2': '', 'game_dir_
                 'frame_gen_multiplier': '2', 'extra_env': '', 'close_on_play': False,
                 'mouse_look': True, 'mouse_sensitivity': '1.0', 'mouse_invert_y': False,
                 'pad_invert_y': False, 'pad_vibration': True, 'pad_vibration_strength': '100',
+                'button_prompts': 'auto',
                 'key_bindings': {}, 'pad_bindings': {}, 'check_updates': True,
                 'art_banner': '', 'art_u1': '', 'art_u2': '', 'art_u3': '', 'steam_art': '',
                 'art_crops': {}, 'shortcut_name': 'Uncharted: The Nathan Drake Collection',
@@ -437,6 +441,7 @@ def game_environment(s, start=None):
     env['BB_FRAME_GEN_MULTIPLIER'] = str(s.get('frame_gen_multiplier') or '2')
     env['BB_CHEATS'] = ','.join(f'{game}:{cheat}' for game, _t, _s, _e in GAMES for cheat in ('health', 'ammo')
                                 if s.get(f'{game}_infinite_{cheat}'))
+    env['BB_BUTTON_PROMPTS'] = str(s.get('button_prompts') or 'auto')
     for item in str(s['extra_env']).split():
         if '=' in item:
             key, value = item.split('=', 1)
@@ -1755,6 +1760,12 @@ class Launcher:
                  _('How far the camera turns for a mouse movement; 1.00 is the default. Drag the slider or '
                    'type a number (0.1 to 10) for a faster turn.'))
         self.check(f, 'mouse_invert_y', _('Invert the mouse vertically'))
+
+        self.section(f, _('Button pictures'))
+        self.row(f, _('Show in the game'), self.choice(f, 'button_prompts', BUTTON_PROMPTS, 40),
+                 _('The pictures of buttons in menus and hints. Automatic shows your keys while you use '
+                   'the keyboard or mouse, Xbox buttons after an Xbox (or other) controller, and the '
+                   'PlayStation buttons after a PlayStation controller.'))
 
         self.section(f, _('Keyboard and mouse buttons'))
         self.note(f, _('Click a box, then press a key or a mouse button (the wheel counts too). '

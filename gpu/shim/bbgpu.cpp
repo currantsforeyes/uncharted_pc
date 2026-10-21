@@ -389,8 +389,8 @@ extern "C" void bbgpu_trophy_notify(int grade, const char* game, const char* nam
                                               : std::vector<unsigned char>());
 }
 
-extern "C" void bbgpu_prompts_controller(int controller) {
-    VideoCore::ButtonPrompts::SetController(controller != 0);
+extern "C" void bbgpu_prompts_controller(int device) {
+    VideoCore::ButtonPrompts::SetDevice(device);
 }
 
 extern "C" int bbgpu_overlay_captures_input(void) {
