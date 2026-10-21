@@ -33,6 +33,7 @@
 #include "core/signals.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "video_core/texture_cache/button_prompts.h"
 
 extern "C" {
 // runtime_memory.c
@@ -386,6 +387,10 @@ extern "C" void bbgpu_trophy_notify(int grade, const char* game, const char* nam
     BbOverlay::NotifyTrophy(grade, game ? game : "", name ? name : "",
                             bytes && png_size ? std::vector<unsigned char>(bytes, bytes + png_size)
                                               : std::vector<unsigned char>());
+}
+
+extern "C" void bbgpu_prompts_controller(int controller) {
+    VideoCore::ButtonPrompts::SetController(controller != 0);
 }
 
 extern "C" int bbgpu_overlay_captures_input(void) {
