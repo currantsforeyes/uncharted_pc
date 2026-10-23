@@ -190,6 +190,30 @@ def art_directories():
     return own + [here / 'art', bundle / 'covers', here / 'covers']
 
 
+PICTURE_SUFFIXES = ('.png', '.jpg', '.jpeg', '.webp')
+
+
+def art_path(name):
+    """The first file for `name` in art_directories(), or None.
+
+    The name keeps the extension the launcher asks for (u1.jpg), but a PNG or WebP saved
+    under the same stem is found too, so hand-made artwork does not have to be re-encoded.
+    """
+    stem = Path(name).stem
+    for directory in art_directories():
+        try:
+            direct = directory / name
+            if direct.is_file():
+                return direct
+            for suffix in PICTURE_SUFFIXES:
+                candidate = directory / f'{stem}{suffix}'
+                if candidate.is_file():
+                    return candidate
+        except OSError:
+            continue
+    return None
+
+
 def load_art(name):
     """The first `name` in art_directories() as RGB, or None (painted scene / dump art instead)."""
     custom = _CUSTOM_ART.get(name)
@@ -199,12 +223,13 @@ def load_art(name):
                 return image.convert('RGB')
         except OSError:
             pass
-    for directory in art_directories():
+    path = art_path(name)
+    if path is not None:
         try:
-            with Image.open(directory / name) as image:
+            with Image.open(path) as image:
                 return image.convert('RGB')
         except OSError:
-            continue
+            pass
     return None
 
 

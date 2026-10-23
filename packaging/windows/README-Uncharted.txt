@@ -21,7 +21,13 @@ Starting
 - Play page -> "Add to Steam" adds the collection to your Steam library, with its cover
   from your game folder. "Desktop shortcut" puts it on the desktop.
 - Artwork is in the art folder next to Uncharted.exe. Replace hero_u1.jpg, hero_u2.jpg or
-  hero_u3.jpg to customize the wide banner for each game; updates keep this folder.
+  hero_u3.jpg to customize the wide banner for each game, and u1.jpg, u2.jpg or u3.jpg for the
+  three library tiles; logo_u1.png (logo_u2, logo_u3, transparent) replaces the drawn title,
+  and collection_banner.jpg the header of the whole collection. PNG works under the same names
+  (u1.png for u1.jpg): the launcher just scales them. Size: the banner is shown at 1600x450
+  (keep that shape, e.g. 3200x900); the tiles are as tall as the tallest of the three covers,
+  so give all three the same shape (2:3, e.g. 1200x1800, makes them portrait). Updates keep
+  this folder.
 - Display page -> Frame rate: 60 FPS as on PS4, or 120 FPS. Gameplay keeps its normal speed
   and the cutscene videos still play at 60. Higher rates are experimental. Above your
   display's refresh rate use the Mailbox or Immediate presentation.

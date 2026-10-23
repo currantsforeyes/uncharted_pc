@@ -67,6 +67,19 @@ class CustomArtworkTests(unittest.TestCase):
         self.assertNotEqual(card.getpixel((100, 2)), (9, 9, 9))
         self.assertNotEqual(card.getpixel((100, 150)), (9, 9, 9))
 
+    def test_png_artwork_is_found_under_a_jpg_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            Image.new('RGB', (40, 60), (10, 120, 200)).save(root / 'u1.png')
+            original = uncharted_art.art_directories
+            uncharted_art.art_directories = lambda: [root]
+            try:
+                self.assertEqual(uncharted_art.art_path('u1.jpg'), root / 'u1.png')
+                self.assertEqual(uncharted_art.art_path('hero_u1.jpg'), None)
+                self.assertEqual(uncharted_art.load_art('u1.jpg').size, (40, 60))
+            finally:
+                uncharted_art.art_directories = original
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1559,16 +1559,15 @@ class Launcher:
     def load_game_banner(self, key, width, height):
         """Load a local, optimized SteamGridDB hero; keep a game-folder fallback."""
         try:
+            import uncharted_art
             from PIL import Image, ImageDraw, ImageOps
             if self.app.get('art_banner'):
-                import uncharted_art
                 page = tuple(int(BG[i:i + 2], 16) for i in (1, 3, 5))
                 scene = uncharted_art.collection_banner(width, height, page)
                 if scene is not None:
                     return scene.convert('RGB')
-            art_dir = Path(sys.executable).resolve().parent / 'art'
-            path = art_dir / f'hero_{key}.jpg'
-            if not path.is_file():
+            path = uncharted_art.art_path(f'hero_{key}.jpg')
+            if path is None:
                 game_dir = self.var('game_dir').get()
                 path = Path(game_dir or '.') / 'sce_sys' / 'pic1.png'
             with Image.open(path) as source:
@@ -1612,11 +1611,14 @@ class Launcher:
         except Exception:
             c.configure(bg='#101012')
         w, h = max(c.winfo_width(), 400), int(c['height'])
-        logo_path = Path(sys.executable).resolve().parent / 'art' / f'logo_{key}.png'
         logo_photo = self.hero_logo_cache.get(key)
         if logo_photo is None:
             try:
+                import uncharted_art
                 from PIL import Image, ImageTk
+                logo_path = uncharted_art.art_path(f'logo_{key}.png')
+                if logo_path is None:
+                    raise OSError(f'no logo for {key}')
                 with Image.open(logo_path) as source:
                     logo = source.convert('RGBA')
                 bounds = logo.getchannel('A').getbbox()
