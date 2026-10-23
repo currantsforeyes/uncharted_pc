@@ -56,11 +56,15 @@ class CustomArtworkTests(unittest.TestCase):
         self.assertEqual(left.getpixel((50, 50)), (220, 20, 30))
         self.assertEqual(right.getpixel((50, 50)), (20, 40, 220))
 
-    def test_landscape_default_cover_fills_portrait_card(self):
+    def test_landscape_default_cover_keeps_its_own_shape(self):
+        width, height = uncharted_art.poster_aspect('u3')
+        self.assertGreater(width, height)          # the bundled key art is landscape
         card = uncharted_art.card_scene('u3', 200, 300)
 
         self.assertEqual(card.size, (200, 300))
-        self.assertNotEqual(card.getpixel((100, 0)), (9, 9, 9))
+        # Fitted whole into a portrait area: the free space above and below is the background.
+        self.assertEqual(card.getpixel((100, 0)), (9, 9, 9))
+        self.assertNotEqual(card.getpixel((100, 150)), (9, 9, 9))
 
 
 if __name__ == '__main__':
