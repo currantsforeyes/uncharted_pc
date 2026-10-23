@@ -1434,11 +1434,10 @@ class Launcher:
         self.var('start').trace_add('write', lambda *_a: self.refresh())
 
     def fit_posters(self, _event=None):
-        """Size each tile to its artwork (the caption stays on screen, nothing is cropped)."""
+        """One size for the three tiles, tall enough for the deepest picture (nothing is cut)."""
         if not self.cards:
             return
         page = self.pages.get('play')
-        # Each tile takes its artwork's shape, so the whole picture shows and nothing is cropped.
         avail = None
         if page is not None and page.winfo_height() > 240:
             # Leave the library heading, the fullscreen row, and the status line on screen.
@@ -1447,19 +1446,24 @@ class Launcher:
             import uncharted_art
         except Exception:
             uncharted_art = None
+        widths, aspects, captions = [], [], []
         for key, card in self.cards.items():
             width = card.winfo_width()
             if width < 80:
                 continue
-            inner = max(48, width - 30)      # _tile_content_size keeps this much for pad and shadow
-            pad = max(10, inner // 28)
+            widths.append(width)
             title, subtitle = next((t, sub) for k, t, sub, _e in GAMES if k == key)
             size = uncharted_art.poster_aspect(key) if uncharted_art else None
-            aspect = size[1] / size[0] if size else 430 / 920
-            caption = (uncharted_art.poster_caption_height(inner, title, subtitle)
-                       if uncharted_art else 52)
-            natural = int(round(inner * aspect)) + caption + 2 * pad + 2
-            total = natural if avail is None else max(self.px(168), min(natural, avail))
+            aspects.append(size[1] / size[0] if size else 430 / 920)
+            captions.append(uncharted_art.poster_caption_height(max(48, width - 30), title, subtitle)
+                            if uncharted_art else 52)
+        if not widths:
+            return
+        inner = max(48, min(widths) - 30)      # _tile_content_size keeps this much for pad and shadow
+        pad = max(10, inner // 28)
+        natural = int(round(inner * max(aspects))) + max(captions) + 2 * pad + 2
+        total = natural if avail is None else max(self.px(168), min(natural, avail))
+        for card in self.cards.values():
             if int(card['height']) != total:
                 card.configure(height=total)
 

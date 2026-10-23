@@ -250,14 +250,29 @@ def _fit(image, width, height, background=(9, 9, 9)):
 
 
 def card_scene(key, width, height, background=(9, 9, 9)):
-    """The whole poster inside the area (the launcher shapes that area from the artwork)."""
+    """The whole poster inside the area, with the space it does not fill behind it.
+
+    The three tiles share one size, and the bundled pictures have different shapes, so the
+    leftovers are filled with a blurred, darkened copy of the same picture instead of a flat
+    band: the tile reads as one picture and nothing of the cover is cut.
+    """
     width, height = max(width, 8), max(height, 8)
     image = _tile_image(key)
     if image is None:
         image = SCENES[key](width * 2, height * 2).resize((width, height), Image.LANCZOS)
     elif POSTERS[key] in _CUSTOM_ART:
         return crop_image(image, (width, height), _CUSTOM_CROPS.get(POSTERS[key]))
-    return _fit(image, width, height, background)
+    scale = min(width / image.width, height / image.height)
+    filled_w = max(1, round(image.width * scale))
+    filled_h = max(1, round(image.height * scale))
+    if filled_w >= width - 1 and filled_h >= height - 1:
+        return _fit(image, width, height, background)
+    art = image.resize((filled_w, filled_h), Image.LANCZOS)
+    backdrop = _cover(image, (width, height), (0.5, 0.5))
+    backdrop = backdrop.filter(ImageFilter.GaussianBlur(max(10, width // 18)))
+    backdrop = Image.blend(backdrop, Image.new('RGB', backdrop.size, (0, 0, 0)), 0.35)
+    backdrop.paste(art, ((width - filled_w) // 2, (height - filled_h) // 2))
+    return backdrop
 
 
 def _rounded_mask(size, radius):
@@ -329,9 +344,9 @@ def poster_tile(key, width, height, title, subtitle, *, selected=False, hover=Fa
                 radius=16, page=(18, 17, 15)):
     """A launcher tile: drop shadow, rounded cover, caption strip, gold ring when selected.
 
-    The poster area takes the artwork's own shape, so the whole picture shows instead of a
-    landscape crop of its middle; a portrait cover makes a portrait tile. When the page leaves
-    less room than that needs, the tile gets narrower (the caller centres it) rather than cut.
+    The poster area is the shape the launcher asks for (the same for the three tiles); the
+    picture is fitted whole inside it, so nothing is cropped and a landscape picture in a
+    taller area is centred with the page colour above and below.
     """
     width, height = max(width, 48), max(height, 80)
     try:
@@ -341,27 +356,16 @@ def poster_tile(key, width, height, title, subtitle, *, selected=False, hover=Fa
     except OSError:
         bold = regular = None
 
-    def metrics(w):
-        text_w = max(24, w - 28)
-        tf = _fit_font(bold, title, text_w, max(12, min(18, w // 16)))
-        sf = _fit_font(regular, subtitle, text_w, max(10, min(13, w // 22)))
-        _tw, th = _ink(tf, title)
-        _sw, sh = _ink(sf, subtitle)
-        return tf, sf, th, sh, max(8, w // 36), th + max(8, w // 36) + sh + 18
-
-    title_font, sub_font, title_h, sub_h, gap, caption = metrics(width)
-    art = _tile_image(key)
-    aspect = art.height / art.width if art is not None else None
-    if aspect:
-        poster_h = round(width * aspect)
-        if poster_h + caption > height:
-            width = max(48, min(width, round((height - caption) / aspect)))
-            title_font, sub_font, title_h, sub_h, gap, caption = metrics(width)
-            poster_h = max(40, round(width * aspect))
-    else:
-        if caption > height // 3:
-            caption = max(title_h + gap + sub_h + 12, height // 3)
-        poster_h = height - caption
+    text_w = max(24, width - 28)
+    title_font = _fit_font(bold, title, text_w, max(12, min(18, width // 16)))
+    sub_font = _fit_font(regular, subtitle, text_w, max(10, min(13, width // 22)))
+    _tw, title_h = _ink(title_font, title)
+    _sw, sub_h = _ink(sub_font, subtitle)
+    gap = max(8, width // 36)
+    caption = title_h + gap + sub_h + 18
+    if caption > height // 3:
+        caption = max(title_h + gap + sub_h + 12, height // 3)
+    poster_h = height - caption
     pad = max(10, width // 28)
     canvas = Image.new('RGBA', (width + pad * 2, poster_h + caption + pad * 2), (0, 0, 0, 0))
     poster = card_scene(key, width, poster_h, page)
