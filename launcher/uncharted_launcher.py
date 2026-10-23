@@ -1403,12 +1403,12 @@ class Launcher:
         tk.Label(head, text=_('Double-click a cover to launch'), bg=SURFACE, fg=MUTED,
                  font=self.font_ui_sm).pack(side='right')
         cards = tk.Frame(shell, bg=SURFACE)
-        cards.pack(fill='x', padx=self.px(14), pady=(0, self.px(6)))
+        cards.pack(fill='x', padx=max(0, self.px(14) - 9), pady=(0, self.px(6)))
         self.cards, self.card_images = {}, {}
         for column, (key, _title, _subtitle, _exe) in enumerate(GAMES):
             cards.columnconfigure(column, weight=1, uniform='games')
             card = tk.Canvas(cards, height=self.px(460), bg=SURFACE, highlightthickness=0, bd=0, cursor='hand2')
-            card.grid(row=0, column=column, sticky='nsew', padx=(0 if column == 0 else 18, 0))
+            card.grid(row=0, column=column, sticky='sew', padx=(9, 9))
             card.bind('<Configure>', lambda _e, k=key: self.draw_card(k))
             card.bind('<Button-1>', lambda _e, k=key: self.var('start').set(k))
             card.bind('<Double-Button-1>', lambda _e, k=key: (self.var('start').set(k), self.play()))
@@ -1434,22 +1434,32 @@ class Launcher:
         self.var('start').trace_add('write', lambda *_a: self.refresh())
 
     def fit_posters(self, _event=None):
-        """Poster tiles keep the cover shape, but stay short enough that the caption is on screen."""
-        sample = self.cards.get('u1')
-        if sample is None:
-            return
-        width = sample.winfo_width()
-        if width < 80:
+        """Size each tile to its artwork (the caption stays on screen, nothing is cropped)."""
+        if not self.cards:
             return
         page = self.pages.get('play')
-        # Landscape SteamGridDB cards (920×430) plus the restrained caption and shadow.
-        natural = int(round(width * 430 / 920)) + self.px(80)
-        avail = natural
+        # Each tile takes its artwork's shape, so the whole picture shows and nothing is cropped.
+        avail = None
         if page is not None and page.winfo_height() > 240:
             # Leave the library heading, the fullscreen row, and the status line on screen.
             avail = page.winfo_height() - self.hero.winfo_height() - self.px(196)
-        total = max(self.px(168), min(natural, avail))
-        for card in self.cards.values():
+        try:
+            import uncharted_art
+        except Exception:
+            uncharted_art = None
+        for key, card in self.cards.items():
+            width = card.winfo_width()
+            if width < 80:
+                continue
+            inner = max(48, width - 30)      # _tile_content_size keeps this much for pad and shadow
+            pad = max(10, inner // 28)
+            title, subtitle = next((t, sub) for k, t, sub, _e in GAMES if k == key)
+            size = uncharted_art.poster_aspect(key) if uncharted_art else None
+            aspect = size[1] / size[0] if size else 430 / 920
+            caption = (uncharted_art.poster_caption_height(inner, title, subtitle)
+                       if uncharted_art else 52)
+            natural = int(round(inner * aspect)) + caption + 2 * pad + 2
+            total = natural if avail is None else max(self.px(168), min(natural, avail))
             if int(card['height']) != total:
                 card.configure(height=total)
 

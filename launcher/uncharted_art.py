@@ -176,6 +176,7 @@ def set_custom_art(paths, crops=None):
         _CUSTOM_ART = custom
         _CUSTOM_CROPS = crop_values
         _LOADED.clear()
+        _TILES.clear()
         _BANNER = None
 
 
@@ -248,15 +249,15 @@ def _fit(image, width, height, background=(9, 9, 9)):
     return canvas
 
 
-def card_scene(key, width, height):
-    """Cover the poster area with the bundled or user-selected image."""
+def card_scene(key, width, height, background=(9, 9, 9)):
+    """The whole poster inside the area (the launcher shapes that area from the artwork)."""
     width, height = max(width, 8), max(height, 8)
-    image = _load_scene(key)
+    image = _tile_image(key)
     if image is None:
         image = SCENES[key](width * 2, height * 2).resize((width, height), Image.LANCZOS)
     elif POSTERS[key] in _CUSTOM_ART:
         return crop_image(image, (width, height), _CUSTOM_CROPS.get(POSTERS[key]))
-    return _cover(image, (width, height), (0.5, 0.5))
+    return _fit(image, width, height, background)
 
 
 def _rounded_mask(size, radius):
@@ -282,10 +283,34 @@ def _ink(font, text):
     return box[2] - box[0], box[3] - box[1]
 
 
-def poster_tile(key, width, height, title, subtitle, *, selected=False, hover=False, dimmed=False,
-                radius=16, page=(18, 17, 15)):
-    """A launcher tile: drop shadow, rounded cover, caption strip, gold ring when selected."""
-    width, height = max(width, 48), max(height, 80)
+_TILES = {}
+
+
+def _tile_image(key):
+    """The tile artwork without the uniform border the bundled posters are padded with."""
+    if key not in _TILES:
+        image = _load_scene(key)
+        if image is not None and POSTERS[key] not in _CUSTOM_ART:
+            corner = image.getpixel((0, 0))
+            flat = Image.new('RGB', image.size, corner)
+            diff = ImageChops.difference(image, flat).convert('L')
+            box = diff.point(lambda v: 255 if v > 6 else 0).getbbox()
+            # Only a real padding band, never a dark edge of the picture itself.
+            if box and (box[2] - box[0]) * (box[3] - box[1]) > image.width * image.height // 3:
+                image = image.crop(box)
+        _TILES[key] = image
+    return _TILES[key]
+
+
+def poster_aspect(key):
+    """(width, height) of the tile artwork, or None when the painted scene stands in for it."""
+    image = _tile_image(key)
+    return image.size if image is not None else None
+
+
+def poster_caption_height(width, title, subtitle):
+    """Height of the caption strip poster_tile draws under a `width`-wide poster."""
+    width = max(width, 48)
     text_w = max(24, width - 28)
     try:
         from uncharted_fonts import font_path
@@ -297,14 +322,49 @@ def poster_tile(key, width, height, title, subtitle, *, selected=False, hover=Fa
     sub_font = _fit_font(regular, subtitle, text_w, max(10, min(13, width // 22)))
     _tw, title_h = _ink(title_font, title)
     _sw, sub_h = _ink(sub_font, subtitle)
-    gap = max(8, width // 36)
-    caption = title_h + gap + sub_h + 18
-    if caption > height // 3:
-        caption = max(title_h + gap + sub_h + 12, height // 3)
-    poster_h = height - caption
+    return title_h + max(8, width // 36) + sub_h + 18
+
+
+def poster_tile(key, width, height, title, subtitle, *, selected=False, hover=False, dimmed=False,
+                radius=16, page=(18, 17, 15)):
+    """A launcher tile: drop shadow, rounded cover, caption strip, gold ring when selected.
+
+    The poster area takes the artwork's own shape, so the whole picture shows instead of a
+    landscape crop of its middle; a portrait cover makes a portrait tile. When the page leaves
+    less room than that needs, the tile gets narrower (the caller centres it) rather than cut.
+    """
+    width, height = max(width, 48), max(height, 80)
+    try:
+        from uncharted_fonts import font_path
+        bold = font_path('Cinzel-SemiBold.ttf') or font_path('Cinzel-Bold.ttf')
+        regular = font_path('Cinzel-Regular.ttf')
+    except OSError:
+        bold = regular = None
+
+    def metrics(w):
+        text_w = max(24, w - 28)
+        tf = _fit_font(bold, title, text_w, max(12, min(18, w // 16)))
+        sf = _fit_font(regular, subtitle, text_w, max(10, min(13, w // 22)))
+        _tw, th = _ink(tf, title)
+        _sw, sh = _ink(sf, subtitle)
+        return tf, sf, th, sh, max(8, w // 36), th + max(8, w // 36) + sh + 18
+
+    title_font, sub_font, title_h, sub_h, gap, caption = metrics(width)
+    art = _tile_image(key)
+    aspect = art.height / art.width if art is not None else None
+    if aspect:
+        poster_h = round(width * aspect)
+        if poster_h + caption > height:
+            width = max(48, min(width, round((height - caption) / aspect)))
+            title_font, sub_font, title_h, sub_h, gap, caption = metrics(width)
+            poster_h = max(40, round(width * aspect))
+    else:
+        if caption > height // 3:
+            caption = max(title_h + gap + sub_h + 12, height // 3)
+        poster_h = height - caption
     pad = max(10, width // 28)
-    canvas = Image.new('RGBA', (width + pad * 2, height + pad * 2), (0, 0, 0, 0))
-    poster = card_scene(key, width, poster_h)
+    canvas = Image.new('RGBA', (width + pad * 2, poster_h + caption + pad * 2), (0, 0, 0, 0))
+    poster = card_scene(key, width, poster_h, page)
     if dimmed:
         poster = Image.blend(poster, Image.new('RGB', poster.size, (12, 12, 12)), 0.52)
     if selected:
