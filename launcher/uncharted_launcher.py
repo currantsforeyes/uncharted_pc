@@ -1504,17 +1504,19 @@ class Launcher:
             self.card_images[key] = (wanted, image)
         card.delete('all')
         image = self.card_images[key][1]
+        left = 0
         if image:
-            x = max(0, (w - image.width()) // 2)
-            card.create_image(x, 0, image=image, anchor='nw')
+            left = max(0, (w - image.width()) // 2)
+            card.create_image(left, 0, image=image, anchor='nw')
         else:
             card.create_rectangle(0, 0, w, h, fill=CARD, outline=LINE)
         if hot:
             label = _('Change image')
             box_w = max(self.px(108), len(label) * self.px(7))
-            card.create_rectangle(w - box_w - self.px(12), self.px(12), w - self.px(12), self.px(42),
-                                  fill='#111214', outline=GOLD_DIM, tags='edit_art')
-            card.create_text(w - box_w // 2 - self.px(12), self.px(27), text=label, fill=TEXT,
+            right = left + (image.width() if image else w)
+            card.create_rectangle(right - box_w - self.px(12), self.px(12), right - self.px(12),
+                                  self.px(42), fill='#111214', outline=GOLD_DIM, tags='edit_art')
+            card.create_text(right - box_w // 2 - self.px(12), self.px(27), text=label, fill=TEXT,
                              font=self.font_ui_sm, tags='edit_art')
             card.tag_bind('edit_art', '<Button-1>', lambda _e, k=key: self.edit_launcher_art(
                 f'art_{k}', _('Change image'), (600, 900), k))

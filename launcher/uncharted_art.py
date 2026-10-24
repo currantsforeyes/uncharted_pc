@@ -369,9 +369,9 @@ def poster_tile(key, width, height, title, subtitle, *, selected=False, hover=Fa
                 radius=16, page=(18, 17, 15)):
     """A launcher tile: drop shadow, rounded cover, caption strip, gold ring when selected.
 
-    The poster area is the shape the launcher asks for (the same for the three tiles); the
-    picture is fitted whole inside it, so nothing is cropped and a landscape picture in a
-    taller area is centred with the page colour above and below.
+    The tile takes the picture's own shape. When the page leaves less height than the full
+    column width would need, the tile narrows (and the caller centres it) instead of leaving
+    bands beside the picture: the ring and the shadow wrap the picture itself.
     """
     width, height = max(width, 48), max(height, 80)
     try:
@@ -381,16 +381,28 @@ def poster_tile(key, width, height, title, subtitle, *, selected=False, hover=Fa
     except OSError:
         bold = regular = None
 
-    text_w = max(24, width - 28)
-    title_font = _fit_font(bold, title, text_w, max(12, min(18, width // 16)))
-    sub_font = _fit_font(regular, subtitle, text_w, max(10, min(13, width // 22)))
-    _tw, title_h = _ink(title_font, title)
-    _sw, sub_h = _ink(sub_font, subtitle)
-    gap = max(8, width // 36)
-    caption = title_h + gap + sub_h + 18
-    if caption > height // 3:
-        caption = max(title_h + gap + sub_h + 12, height // 3)
-    poster_h = height - caption
+    def metrics(w):
+        text_w = max(24, w - 28)
+        tf = _fit_font(bold, title, text_w, max(12, min(18, w // 16)))
+        sf = _fit_font(regular, subtitle, text_w, max(10, min(13, w // 22)))
+        _tw, th = _ink(tf, title)
+        _sw, sh = _ink(sf, subtitle)
+        return tf, sf, th, sh, max(8, w // 36), th + max(8, w // 36) + sh + 18
+
+    title_font, sub_font, title_h, sub_h, gap, caption = metrics(width)
+    art = _tile_image(key)
+    aspect = art.height / art.width if art is not None else None
+    if aspect:
+        # The widest tile in the picture's shape that still fits above the caption.
+        fit_w = max(48, min(width, int(round((height - caption) / aspect))))
+        if fit_w != width:
+            width = fit_w
+            title_font, sub_font, title_h, sub_h, gap, caption = metrics(width)
+        poster_h = max(40, min(int(round(width * aspect)), height - caption))
+    else:
+        if caption > height // 3:
+            caption = max(title_h + gap + sub_h + 12, height // 3)
+        poster_h = height - caption
     pad = max(10, width // 28)
     canvas = Image.new('RGBA', (width + pad * 2, poster_h + caption + pad * 2), (0, 0, 0, 0))
     poster = card_scene(key, width, poster_h, page)
