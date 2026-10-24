@@ -1535,7 +1535,6 @@ class Launcher:
         c = self.hero
         w, h = max(c.winfo_width(), 400), int(c['height'])
         start = self.var('start').get()
-        title, subtitle = next((t, sub) for k, t, sub, _e in GAMES if k == start)
         game_dir = game_folder(self.current(), start)
         key = (w, h, start, game_dir, self.app.get('art_banner', ''))
         if self.banner_key != key:
@@ -1553,10 +1552,10 @@ class Launcher:
                 self._hero_from = self.banner_pil.copy()
                 self._hero_to = target
                 self._hero_step = 0
-                self._animate_hero(title, subtitle)
+                self._animate_hero()
                 return
             self.banner_pil = target
-        self._paint_hero(self.banner_pil, start, title, subtitle)
+        self._paint_hero(self.banner_pil, start)
 
     def load_game_banner(self, key, width, height):
         """Load a local, optimized SteamGridDB hero; keep a game-folder fallback."""
@@ -1587,7 +1586,7 @@ class Launcher:
         except Exception:
             return Image.new('RGB', (width, height), (14, 14, 15))
 
-    def _animate_hero(self, title, subtitle):
+    def _animate_hero(self):
         """Cross-fade only on selection changes; no idle video decoder or frame loop."""
         from PIL import Image
         self._hero_step += 1
@@ -1596,13 +1595,14 @@ class Launcher:
         t = t * t * (3 - 2 * t)  # smoothstep easing
         frame = Image.blend(self._hero_from, self._hero_to, t)
         self.banner_pil = frame if self._hero_step < steps else self._hero_to
-        self._paint_hero(self.banner_pil, self.var('start').get(), title, subtitle)
+        self._paint_hero(self.banner_pil, self.var('start').get())
         if self._hero_step < steps:
-            self.hero_after = self.root.after(24, lambda: self._animate_hero(title, subtitle))
+            self.hero_after = self.root.after(24, self._animate_hero)
         else:
             self.hero_after = None
 
-    def _paint_hero(self, image, key, title, subtitle):
+    def _paint_hero(self, image, key):
+        """The banner picture and its game logo; the name, year and version live on the tiles."""
         c = self.hero
         c.delete('all')
         self.hero_photo = None
@@ -1633,19 +1633,9 @@ class Launcher:
                 logo_photo = None
         if logo_photo:
             c.create_image(self.px(34), int(h * .47), image=logo_photo, anchor='w')
-        else:
-            c.create_text(self.px(34), int(h * .47), text=_(title).upper(),
-                          anchor='w', fill='#fffaf0', font=self.font_brand_xl)
-        c.create_text(self.px(38), int(h * .69), text=_(subtitle).upper(),
-                      anchor='w', fill='#e6c777', font=self.font_brand_sm)
         c.create_rectangle(0, h - 2, w, h, fill=GOLD_DIM, outline='')
         c.create_text(w - self.px(24), self.px(18), text=_('Change image'), anchor='ne',
                       fill='#d6c9ae', font=self.font_ui_sm)
-        info = self.info
-        status = (f"{info['id']}  ·  {_('version')} {info['version']}" if info
-                  else _('Set your game folder on the Game page'))
-        c.create_text(self.px(24), h - self.px(12), text=status, anchor='sw', fill=GOLD,
-                      font=self.font_brand_sm)
 
     def photo_collection_banner(self, width, height):
         try:

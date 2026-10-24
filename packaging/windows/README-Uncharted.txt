@@ -22,7 +22,8 @@ Starting
   from your game folder. "Desktop shortcut" puts it on the desktop.
 - Artwork is in the art folder next to Uncharted.exe. Replace hero_u1.jpg, hero_u2.jpg or
   hero_u3.jpg to customize the wide banner for each game, and u1.jpg, u2.jpg or u3.jpg for the
-  three library tiles; logo_u1.png (logo_u2, logo_u3, transparent) replaces the drawn title,
+  three library tiles; logo_u1.png (logo_u2, logo_u3, transparent) is drawn over the banner in
+  place of the game name (the name, year and version are on the tiles and the line below),
   and collection_banner.jpg the header of the whole collection. PNG works under the same names
   (u1.png for u1.jpg): the launcher just scales them. Size: the banner is shown at 1600x450
   (keep that shape, e.g. 3200x900); the tiles are as tall as the tallest of the three covers,
