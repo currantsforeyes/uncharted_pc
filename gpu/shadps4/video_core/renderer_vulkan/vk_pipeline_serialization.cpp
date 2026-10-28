@@ -24,9 +24,9 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 11u; // bbport: scalar instructions split EXEC scopes; motion shaders hold address stand-ins
-static constexpr u32 ShaderMetaVersion = 7u; // bbport: ImageResource::needs_native
-static constexpr u32 PipelineKeyVersion = 5u; // bbport: Info layout (ImageResource::needs_native)
+static constexpr u32 ShaderBinaryVersion = 12u; // bbport: scalar instructions split EXEC scopes (11); WorkgroupSplit (12)
+static constexpr u32 ShaderMetaVersion = 8u; // bbport: InfoPersistent::cs_split_eligible
+static constexpr u32 PipelineKeyVersion = 6u; // bbport: Info layout (cs_split_eligible)
 } // namespace Serialization
 
 namespace Vulkan {

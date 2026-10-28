@@ -101,6 +101,7 @@ struct PipelineSelection {
     bool motion = false;
     DrawIndirectParams draw_indirect_params{};
     struct PrepWorker* worker{}; ///< set: read-only selection for a draw-preparation worker
+    bool indirect_dispatch{}; ///< bbport: compute: workgroup count in GPU memory (WorkgroupSplit)
 };
 
 /// bbport: a draw-preparation worker's own program state (see vk_draw_prep.h).
@@ -164,7 +165,8 @@ public:
         return used_prepared;
     }
 
-    const ComputePipeline* GetComputePipeline();
+    /// bbport: `indirect`: the workgroup count is in GPU memory (no WorkgroupSplit).
+    const ComputePipeline* GetComputePipeline(bool indirect = false);
 
     using Result = std::tuple<const Shader::Info*, vk::ShaderModule,
                               std::optional<Shader::Gcn::FetchShaderData>, u64>;
