@@ -40,8 +40,9 @@ CONFIG_DIR = Path(os.environ.get('APPDATA', Path.home())) / 'uncharted-launcher'
 CONFIG_FILE = CONFIG_DIR / 'settings.json'
 NAME = 'Uncharted'
 AUTHOR = 'SuperMedo'
-# This build; GitHub release tags are v<VERSION> (their digits are compared).
-VERSION = '0.3.6'
+# This build: the upstream release it is based on (GitHub release tags are v<VERSION>; their
+# digits are compared, so a newer release still shows up in the launcher).
+VERSION = '0.3.11'
 RELEASES_API = 'https://api.github.com/repos/Supermedo/uncharted_pc/releases/latest'
 RELEASES_PAGE = 'https://github.com/Supermedo/uncharted_pc/releases/latest'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'uncharted-update'
