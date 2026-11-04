@@ -50,10 +50,11 @@ def per_game_defaults(env, exe, player):
     if player['BB_READBACK_SMALL_BUFFERS'] is None:
         env['BB_READBACK_SMALL_BUFFERS'] = '1' if exe in (EXECUTABLES['u2'], EXECUTABLES['u3']) else '0'
     # U3 characters sinking into the ground, floating or twitching (#727, #745, #751, #763; fix from
-    # drakolordx7's community build): the raycaster copy's results are read back at the end-of-pipe
-    # label (Cartagena square 88 -> 66 FPS uncapped). The full fix also makes the label wait for
-    # every small result (BB_READBACK_SMALL_GATE=1, the launcher's Extra environment field: 53 FPS
-    # in the same place), so that one is left to the player.
+    # drakolordx7's community build): the raycaster copy's results are read back and land once the
+    # GPU is done (no cost: Cartagena market 88 -> 96 FPS uncapped). The full fix also makes the
+    # end-of-pipe label wait for them and every small result (BB_COPY64_EOP_GATE=1,
+    # BB_READBACK_SMALL_GATE=1, the launcher's Extra environment field: 53 FPS in the same place),
+    # so that one is left to the player.
     if player['BB_COPY64_EOP_READBACK'] is None:
         if exe == EXECUTABLES['u3']:
             env['BB_COPY64_EOP_READBACK'] = '1'
