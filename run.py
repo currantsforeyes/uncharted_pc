@@ -24,7 +24,8 @@ import cheats
 EXECUTABLES = {'u1': 'eboot.bin', 'u2': 'big2-ps4_Shipping.elf', 'u3': 'big3-ps4_Shipping.elf'}
 LOADEXEC_EXIT = 101  # runtime_services.c: the game asked for another executable
 # The variables whose per-game defaults per_game_defaults() sets (a player's own value wins).
-GAME_ENV = ('BB_GPU_MERGE', 'BB_TINY_READBACK', 'BB_READBACK_SMALL_BUFFERS', 'BB_SCALAR_COPY64_SYNC')
+GAME_ENV = ('BB_GPU_MERGE', 'BB_TINY_READBACK', 'BB_READBACK_SMALL_BUFFERS', 'BB_SCALAR_COPY64_SYNC',
+            'BB_READBACK_SMALL_GATE', 'BB_COPY64_EOP_READBACK')
 
 
 def per_game_defaults(env, exe, player):
@@ -48,6 +49,18 @@ def per_game_defaults(env, exe, player):
         env['BB_TINY_READBACK'] = '1' if exe in (EXECUTABLES['u2'], EXECUTABLES['u3']) else '0'
     if player['BB_READBACK_SMALL_BUFFERS'] is None:
         env['BB_READBACK_SMALL_BUFFERS'] = '1' if exe in (EXECUTABLES['u2'], EXECUTABLES['u3']) else '0'
+    # U3 characters sinking into the ground, floating or twitching (#727, #745, #751, #763; fix from
+    # drakolordx7's community build): the raycaster copy's results are read back at the end-of-pipe
+    # label (Cartagena square 88 -> 66 FPS uncapped). The full fix also makes the label wait for
+    # every small result (BB_READBACK_SMALL_GATE=1, the launcher's Extra environment field: 53 FPS
+    # in the same place), so that one is left to the player.
+    if player['BB_COPY64_EOP_READBACK'] is None:
+        if exe == EXECUTABLES['u3']:
+            env['BB_COPY64_EOP_READBACK'] = '1'
+        else:
+            env.pop('BB_COPY64_EOP_READBACK', None)
+    if player['BB_READBACK_SMALL_GATE'] is None:
+        env.pop('BB_READBACK_SMALL_GATE', None)
     if player['BB_SCALAR_COPY64_SYNC'] is None:
         copy_on = exe in (EXECUTABLES['u1'], EXECUTABLES['u2'])
         env['BB_SCALAR_COPY64_SYNC'] = '2' if copy_on else '0'
