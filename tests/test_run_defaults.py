@@ -34,6 +34,7 @@ class PerGameDefaultsTests(unittest.TestCase):
         self.assertEqual(env['BB_READBACK_SMALL_BUFFERS'], '0')
         self.assertEqual(env['BB_SCALAR_COPY64_SYNC'], '2')
         self.assertEqual(env['BB_SCALAR_COPY64_DEFER'], '1')
+        self.assertNotIn('BB_COPY64_EOP_READBACK', env)
 
     def test_uncharted_3_gets_the_readbacks_but_not_the_copies(self):
         env = self.apply('big3-ps4_Shipping.elf')
@@ -42,6 +43,8 @@ class PerGameDefaultsTests(unittest.TestCase):
         self.assertEqual(env['BB_READBACK_SMALL_BUFFERS'], '1')
         self.assertEqual(env['BB_SCALAR_COPY64_SYNC'], '0')   # 94 -> 54 FPS in Cartagena square
         self.assertEqual(env['BB_SCALAR_COPY64_DEFER'], '0')
+        self.assertEqual(env['BB_COPY64_EOP_READBACK'], '1')  # characters sinking / floating
+        self.assertNotIn('BB_READBACK_SMALL_GATE', env)       # the full fix stays the player's choice
 
     def test_the_players_own_values_win(self):
         env = self.apply('big2-ps4_Shipping.elf', BB_GPU_MERGE='1', BB_TINY_READBACK='0')

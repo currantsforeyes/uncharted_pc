@@ -42,7 +42,7 @@ NAME = 'Uncharted'
 AUTHOR = 'SuperMedo'
 # This build: the upstream release it is based on (GitHub release tags are v<VERSION>; their
 # digits are compared, so a newer release still shows up in the launcher).
-VERSION = '0.3.11'
+VERSION = '0.3.13'
 RELEASES_API = 'https://api.github.com/repos/Supermedo/uncharted_pc/releases/latest'
 RELEASES_PAGE = 'https://github.com/Supermedo/uncharted_pc/releases/latest'
 UPDATE_DIR = Path(tempfile.gettempdir()) / 'uncharted-update'
