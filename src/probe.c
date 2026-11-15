@@ -1309,6 +1309,81 @@ static void patch_job_sleep(uint64_t image_size) {
         return;
     }
 }
+/* The engine's job runner copies a descriptor it reaches through the job's record
+ * (mov rax, [r10+8]; mov rcx, [rax+0x20]); a job run before its descriptor was set read address 0x20
+ * and the game stopped (BilalReloaded's port 0.8.0, its #205 #304 #326, all three games). From
+ * Mevlock's dev builds: before the two loads a jump goes to a stub in the function's dead assert path
+ * (it keeps its int 0x41 first); a null pointer ends the job at the function's own exit, otherwise the
+ * loads run and it jumps back. 1.02 code (US CUSA02320, EU/Russian CUSA02344, EU 1.02): the same bytes
+ * in those dumps. Both sites are found by their exact bytes and patched only together, at the distance
+ * the jumps were made for (1.00 has its own sites, below). BB_JOB_GUARD=0: off. */
+static void patch_job_descriptor_guard(uint64_t image_size) {
+    const char *env=getenv("BB_JOB_GUARD");
+    if (env && env[0]=='0') return;
+    static const struct {
+        const char *game, *loads, *cave;
+        unsigned char jump[27], stub[24];
+        int64_t distance;
+    } builds[]={
+        {"U1","49c7424800000000488b05a4b6b80049894210498b4208488b4820","488b05efe6a9004885c07427488d3d2ce91e00488d35c4e7",
+         {0x49,0xc7,0x42,0x48,0x00,0x00,0x00,0x00,0x48,0x8b,0x05,0xa4,0xb6,0xb8,0x00,0x49,0x89,0x42,0x10,0xe9,0xff,0x0a,0x00,0x00,0x90,0x90,0x90},
+         {0xcd,0x41,0x49,0x8b,0x42,0x08,0x48,0x85,0xc0,0x0f,0x84,0x9a,0xff,0xff,0xff,0x48,0x8b,0x48,0x20,0xe9,0xee,0xf4,0xff,0xff},0xb15},
+        {"U2","49c7424800000000488b0514e4940049894210498b4208488b4820","488b05618484004885c07427488d3dfa731800488d35ef71",
+         {0x49,0xc7,0x42,0x48,0x00,0x00,0x00,0x00,0x48,0x8b,0x05,0x14,0xe4,0x94,0x00,0x49,0x89,0x42,0x10,0xe9,0xfd,0x0a,0x00,0x00,0x90,0x90,0x90},
+         {0xcd,0x41,0x49,0x8b,0x42,0x08,0x48,0x85,0xc0,0x0f,0x84,0x9a,0xff,0xff,0xff,0x48,0x8b,0x48,0x20,0xe9,0xf0,0xf4,0xff,0xff},0xb13},
+        {"U3","49c7424800000000488b05c4c3d60049894210498b4208488b4820","488b05418dc6004885c07427488d3d08414f00488d35fd3e",
+         {0x49,0xc7,0x42,0x48,0x00,0x00,0x00,0x00,0x48,0x8b,0x05,0xc4,0xc3,0xd6,0x00,0x49,0x89,0x42,0x10,0xe9,0xfd,0x0a,0x00,0x00,0x90,0x90,0x90},
+         {0xcd,0x41,0x49,0x8b,0x42,0x08,0x48,0x85,0xc0,0x0f,0x84,0x9a,0xff,0xff,0xff,0x48,0x8b,0x48,0x20,0xe9,0xf0,0xf4,0xff,0xff},0xb13},
+    };
+    for (size_t b=0;b<sizeof(builds)/sizeof(*builds);++b) {
+        const int64_t loads=find_unique_pattern(image_size,builds[b].loads);
+        if (loads<0) continue;
+        const int64_t cave=find_unique_pattern(image_size,builds[b].cave);
+        if (cave-loads!=builds[b].distance) {
+            printf("Job descriptor guard: %s 1.02 loads found, its stub site not where expected; not patched\n",builds[b].game);
+            return;
+        }
+        memcpy(image+cave,builds[b].stub,sizeof(builds[b].stub));
+        memcpy(image+loads,builds[b].jump,sizeof(builds[b].jump));
+        printf("Job descriptor guard: %s 1.02 job runner skips a job without its descriptor (%#" PRIx64 ", stub %#" PRIx64 ")\n",
+               builds[b].game,(uint64_t)loads,(uint64_t)cave);
+        return;
+    }
+    /* 1.00 code (EU CUSA02343 and US CUSA02320 1.00, Mevlock 726f47db): the job function is not inlined
+     * there; the same two loads follow its descriptor copy (mov rax, [rbx+8]; mov rcx, [rax+0x20]) and
+     * jump to a stub in the dead assert path of a nearby job type check (int 0x41 kept first); a null
+     * pointer goes to the function's profiler scope pop and exit. */
+    static const struct {
+        const char *game, *loads, *cave;
+        unsigned char jump[21], stub[24];
+        int64_t distance;
+    } builds_100[]={
+        {"U1","48895348e870dcf0ff48894310488b4308488b4820","e85866e7ff4885c07427488d3dd8d03200488d35fad03200",
+         {0x48,0x89,0x53,0x48,0xe8,0x70,0xdc,0xf0,0xff,0x48,0x89,0x43,0x10,0xe9,0x8c,0x05,0x00,0x00,0x90,0x90,0x90},
+         {0xcd,0x41,0x48,0x8b,0x43,0x08,0x48,0x85,0xc0,0x0f,0x84,0xc8,0xfb,0xff,0xff,0x48,0x8b,0x48,0x20,0xe9,0x61,0xfa,0xff,0xff},0x59c},
+        {"U2","48895348e8109ef0ff48894310488b4308488b4820","e858d6e6ff4885c07427488d3df8fd5600488d351afe5600",
+         {0x48,0x89,0x53,0x48,0xe8,0x10,0x9e,0xf0,0xff,0x48,0x89,0x43,0x10,0xe9,0x9c,0x05,0x00,0x00,0x90,0x90,0x90},
+         {0xcd,0x41,0x48,0x8b,0x43,0x08,0x48,0x85,0xc0,0x0f,0x84,0xb8,0xfb,0xff,0xff,0x48,0x8b,0x48,0x20,0xe9,0x51,0xfa,0xff,0xff},0x5ac},
+        {"U3","48895348e8306cf0ff48894310488b4308488b4820","e8c824e7ff4885c07427488d3dd8df9c00488d35fadf9c00",
+         {0x48,0x89,0x53,0x48,0xe8,0x30,0x6c,0xf0,0xff,0x48,0x89,0x43,0x10,0xe9,0x8c,0x05,0x00,0x00,0x90,0x90,0x90},
+         {0xcd,0x41,0x48,0x8b,0x43,0x08,0x48,0x85,0xc0,0x0f,0x84,0xc8,0xfb,0xff,0xff,0x48,0x8b,0x48,0x20,0xe9,0x61,0xfa,0xff,0xff},0x59c},
+    };
+    for (size_t b=0;b<sizeof(builds_100)/sizeof(*builds_100);++b) {
+        const int64_t loads=find_unique_pattern(image_size,builds_100[b].loads);
+        if (loads<0) continue;
+        const int64_t cave=find_unique_pattern(image_size,builds_100[b].cave);
+        if (cave-loads!=builds_100[b].distance) {
+            printf("Job descriptor guard: %s 1.00 loads found, its stub site not where expected; not patched\n",builds_100[b].game);
+            return;
+        }
+        memcpy(image+cave,builds_100[b].stub,sizeof(builds_100[b].stub));
+        memcpy(image+loads,builds_100[b].jump,sizeof(builds_100[b].jump));
+        printf("Job descriptor guard: %s 1.00 job runner skips a job without its descriptor (%#" PRIx64 ", stub %#" PRIx64 ")\n",
+               builds_100[b].game,(uint64_t)loads,(uint64_t)cave);
+        return;
+    }
+}
+>>>>>>> 8a6b6fb (Job descriptor guard on 1.00 code too (U1, U2, U3, EU and US 1.00))
 /* U2 chapter 21 (convoy): Elena's truck sinks 2-4 m into the snow for ~0.5 s after a bump. The bump
  * plays an animation on the truck by adding a node to its animation blend (US 0x399700, EU 0x102330:
  * node, anim, params). Adding a node copies the params' bool at +0x11 into bit 2 of the previous
