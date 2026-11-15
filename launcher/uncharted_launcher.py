@@ -160,7 +160,7 @@ RESERVED_KEYS = {'Insert': 'Insert opens the in-game settings menu.',
                  'Alt_L': 'Left Alt frees the mouse cursor while held.'}
 
 APP_DEFAULTS = {'game_dir': '', 'game_dir_u1': '', 'game_dir_u2': '', 'game_dir_u3': '', 'user_dir': '', 'start': 'u1', 'language': '1', 'ui_language': '', 'player_name': '',
-                'fullscreen': False, 'present_mode': 'Mailbox', 'frame_rate': '60', 'fps_limit': '0', 'show_fps': False,
+                'fullscreen': False, 'present_mode': 'Mailbox', 'frame_rate': '60', 'fps_limit': '0', 'show_fps': False, 'perf_log': False,
                 'window_size': '1920x1080', 'render_height': '1080', 'aspect': '16:9', 'scaler': 'fsr1', 'sharpening': '500',
                 'anti_aliasing': 'off', 'aa_sharpness': '0.2', 'frame_generation': 'off',
                 'frame_gen_multiplier': '2', 'extra_env': '', 'close_on_play': False,
@@ -475,6 +475,8 @@ def game_environment(s, start=None):
     env['BB_LANGUAGE'] = s['language']
     if str(s['player_name']).strip():
         env['BB_USER_NAME'] = str(s['player_name']).strip()
+    if s.get('perf_log', False):
+        env['BB_FRAME_STATS'] = '1'
     env['BB_FULLSCREEN'] = '1' if s['fullscreen'] else '0'
     env['BB_PRESENT_MODE'] = s['present_mode']
     env['BB_VBLANK_HZ'] = str(s.get('frame_rate') or '60')
@@ -2306,6 +2308,10 @@ class Launcher:
                  self.choice(f, 'ui_language', uncharted_i18n.LANGUAGES, 24, self.change_ui_language),
                  _('This changes only the launcher. The game language is selected on the Game page.'))
         self.check(f, 'close_on_play', _('Close the launcher when the game starts'))
+        self.check(f, 'perf_log', _('Write performance details to the log'),
+                   _('Every 5 seconds the log gets the frame rate, the slowest frame and how busy the GPU '
+                     'side of the port was. Turn it on before you report low FPS and send the log with '
+                     'where it happened.'))
         extra = self.ttk.Entry(f, textvariable=self.var('extra_env'), width=60)
         self.row(f, _('Environment'), extra, _('Extra variables for the game, NAME=value separated by spaces.'))
         self.section(f, _('Shader cache'))

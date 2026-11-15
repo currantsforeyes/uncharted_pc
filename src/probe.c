@@ -1722,6 +1722,7 @@ int main(int argc, char **argv) {
         patch_u1_sticky(image_end);
         runtime_display_patch(image, image_end);
         patch_u2_convoy_sink(image_end);
+        patch_job_descriptor_guard(image_end);
     }
 #ifdef _WIN32
     printf("Guest TCB loads redirected to the TEB TLS slot: %" PRIu64 "\n", patch_tcb_loads(segments, ns));
