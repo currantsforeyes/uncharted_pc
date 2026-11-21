@@ -45,11 +45,13 @@ fi
 
 # Third-party decoders, without this project's -Werror policy.
 atrac9=()
+shopt -u nullglob
 for source in third_party/LibAtrac9/C/src/*.c; do
     object=out/tests/atrac9-$(basename "${source%.c}").o
     "$CC" -std=c99 -O1 -w -c "$source" -o "$object" || exit 1
     atrac9+=("$object")
 done
+echo "C tests: Atrac9 objects: ${#atrac9[@]} (from $(printf '%s ' third_party/LibAtrac9/C/src/*.c | wc -w) sources)"
 
 runtime=(src/runtime.c src/runtime_memory.c src/runtime_thread.c src/runtime_fiber.c
          src/runtime_mutex.c src/runtime_sema.c src/runtime_rwlock.c src/runtime_kernel.c
@@ -85,6 +87,7 @@ else
     libs="$libs ${pkg_libs[*]}"
     echo "C tests: pkg-config flags: ${pkg_libs[*]}"
 fi
+echo "C tests: runtime sources: ${#runtime[@]}, libs: $libs"
 
 failed=0
 
