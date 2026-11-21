@@ -10,7 +10,7 @@
 # sources and tests/stubs.c (the GPU entry points runtime.c calls).
 set -uo pipefail
 cd -- "$(dirname -- "$0")/.."
-mkdir -p out/tests
+mkdir -p out/tests || { echo 'cannot create out/tests' >&2; exit 1; }
 
 windows=0
 case "${OSTYPE:-}:${MSYSTEM:-}" in
@@ -43,15 +43,19 @@ if [[ ! -f third_party/LibAtrac9/C/src/libatrac9.h ]]; then
     exit 1
 fi
 
-# Third-party decoders, without this project's -Werror policy.
+# Third-party decoders, without this project's -Werror policy. Paths are derived with shell
+# parameter expansion: the MSYS2 action's shell has no basename/wc (the objects all came out as
+# one file there, so the linker lacked every Atrac9 symbol but the last).
+atrac9_sources=(third_party/LibAtrac9/C/src/*.c)
 atrac9=()
-shopt -u nullglob
-for source in third_party/LibAtrac9/C/src/*.c; do
-    object=out/tests/atrac9-$(basename "${source%.c}").o
+for source in "${atrac9_sources[@]}"; do
+    [[ -f $source ]] || continue
+    stem=${source##*/}
+    object=out/tests/atrac9-${stem%.c}.o
     "$CC" -std=c99 -O1 -w -c "$source" -o "$object" || exit 1
     atrac9+=("$object")
 done
-echo "C tests: Atrac9 objects: ${#atrac9[@]} (from $(printf '%s ' third_party/LibAtrac9/C/src/*.c | wc -w) sources)"
+echo "C tests: Atrac9 objects: ${#atrac9[@]} of ${#atrac9_sources[@]} sources"
 
 runtime=(src/runtime.c src/runtime_memory.c src/runtime_thread.c src/runtime_fiber.c
          src/runtime_mutex.c src/runtime_sema.c src/runtime_rwlock.c src/runtime_kernel.c
