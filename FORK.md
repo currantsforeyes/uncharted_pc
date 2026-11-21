@@ -62,7 +62,9 @@ runs the suite on windows-latest and ubuntu-latest; it needs Actions enabled for
 
 ## Not carried
 
-- Low latency mode (NVIDIA Reflex / AMD Anti-Lag 2) - upstream 0.3.14.
-- PGO builds - upstream 0.3.14; this fork builds with `-O2` and LTO off by default.
-- U2 Chapter Select weapon sets, the audio fallback chain and skipping the friends'-stats notice -
-  upstream 0.3.14/0.3.15.
+- Low latency mode (NVIDIA Reflex / AMD Anti-Lag 2) - upstream 0.3.14; it needs the overlay's
+  display page reworked on top of this fork's launcher.
+- PGO builds - upstream 0.3.14; the committed profile is tied to the upstream toolchain and
+  libc++ version, so it has to be re-recorded here (`BB_PGO=generate`) before it can be used.
+- The speaker-layout reporting (`BB_SPEAKERS`, 5.1/7.1) and the audio fallback chain - upstream
+  0.3.14; they build on audio port code this fork does not have yet.
