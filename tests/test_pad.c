@@ -6,6 +6,9 @@
 static int capture;
 static int rumble_calls;
 static uint16_t rumble_low, rumble_high;
+/* runtime_pad.c's job-context checks read this through an extern (defined in runtime_fiber.c,
+ * which this test does not link). */
+_Thread_local int runtime_ndgi_open;
 int bbgpu_overlay_captures_input(void) { return capture; }
 void bbgpu_mouse_configure(int look) { (void)look; }
 int bbgpu_mouse_sample(float *dx, float *dy, uint32_t *buttons, int *wheel) {

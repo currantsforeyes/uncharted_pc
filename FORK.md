@@ -56,9 +56,16 @@ packaged build.
 
 `python -m unittest discover -s tests -q` is green on Windows. Suites that drive the Linux
 `run.sh` and the AppImage driver discovery are skipped on Windows, and the symlink tests skip when
-the OS does not allow creating links (Windows needs Developer Mode). `.github/workflows/tests.yml`
-runs the suite on windows-latest and ubuntu-latest; it needs Actions enabled for the repository
-(Settings -> Actions -> General).
+the OS does not allow creating links (Windows needs Developer Mode).
+
+`bash tests/build.sh` builds and runs the C tests on Windows (MSYS2 CLANG64) and Linux: the pad
+capture, the semaphore/runtime tests and the content profile. The file-mod operations test is
+POSIX-only. It needs SDL3 and FFmpeg (`pkg-config`); `bash tests/build.sh --minimal` skips the
+modules that need them.
+
+`.github/workflows/tests.yml` runs the Python suite on windows-latest and ubuntu-latest and the C
+tests on MSYS2 CLANG64; it needs Actions enabled for the repository (Settings -> Actions ->
+General).
 
 ## Not carried
 
