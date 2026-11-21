@@ -1401,7 +1401,6 @@ static void patch_job_descriptor_guard(uint64_t image_size) {
         return;
     }
 }
->>>>>>> 8a6b6fb (Job descriptor guard on 1.00 code too (U1, U2, U3, EU and US 1.00))
 /* U2 chapter 21 (convoy): Elena's truck sinks 2-4 m into the snow for ~0.5 s after a bump. The bump
  * plays an animation on the truck by adding a node to its animation blend (US 0x399700, EU 0x102330:
  * node, anim, params). Adding a node copies the params' bool at +0x11 into bit 2 of the previous
