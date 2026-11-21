@@ -12,8 +12,10 @@ set -uo pipefail
 cd -- "$(dirname -- "$0")/.."
 mkdir -p out/tests
 
+windows=0
 case $(uname -s) in
 MINGW*|MSYS*)
+    windows=1
     # shellcheck source=../msys2-env.sh
     source ./msys2-env.sh
     CC=${CC:-clang}
@@ -33,6 +35,7 @@ MINGW*|MSYS*)
     ;;
 esac
 if [[ $minimal == --minimal ]]; then minimal=1; else minimal=0; fi
+echo "C tests: $(uname -s), CC=$CC, pkg-config=$(command -v pkg-config || echo none), minimal=$minimal"
 
 if [[ ! -f third_party/LibAtrac9/C/src/libatrac9.h ]]; then
     echo 'LibAtrac9 is missing: git submodule update --init --recursive' >&2
@@ -52,6 +55,12 @@ runtime=(src/runtime.c src/runtime_memory.c src/runtime_thread.c src/runtime_fib
          src/runtime_file.c src/runtime_savedata.c src/runtime_rtc.c src/runtime_time.c
          src/runtime_content.c src/runtime_services.c src/runtime_trophy.c src/compat_win.c tests/stubs.c)
 pkg_includes=()
+if [[ $minimal != 1 ]] && { ! command -v pkg-config >/dev/null ||
+        ! pkg-config --exists sdl3 libavcodec libavutil libavformat; }; then
+    echo 'SDL3/FFmpeg are not available through pkg-config: building the subset that does not need them.' >&2
+    echo 'Install the SDL3 and FFmpeg development packages (MSYS2: SDL3, ffmpeg) for the full set.' >&2
+    minimal=1
+fi
 if [[ $minimal == 1 ]]; then
     runtime+=(out/tests/audio-stub.c "${atrac9[@]}")
     cat > out/tests/audio-stub.c <<'STUB'
@@ -73,6 +82,7 @@ else
     read -r -a pkg_includes <<< "$(pkg-config --cflags libavcodec libavutil libavformat sdl3)"
     read -r -a pkg_libs <<< "$(pkg-config --libs libavcodec libavutil libavformat sdl3)"
     libs="$libs ${pkg_libs[*]}"
+    echo "C tests: pkg-config flags: ${pkg_libs[*]}"
 fi
 
 failed=0
@@ -97,7 +107,7 @@ build() {
         "${pkg_includes[@]+"${pkg_includes[@]}"}" \
         "$@" $libs $extra $nohigh -o "out/tests/$name" 2> "out/tests/$name.build.log"; then
         printf 'BUILD FAILED  %s (out/tests/%s.build.log)\n' "$name" "$name" >&2
-        tail -20 "out/tests/$name.build.log" >&2
+        cat "out/tests/$name.build.log" >&2
         failed=1
         return 1
     fi
@@ -120,7 +130,7 @@ if build content-test tests/test_content.c src/runtime_content.c tests/stubs.c; 
     run content-test
 fi
 # test_file_mods.c uses mkdtemp and symlink: POSIX only.
-if [[ $(uname -s) != MINGW* && $(uname -s) != MSYS* ]]; then
+if [[ $windows == 0 ]]; then
     if build file-mods-test tests/test_file_mods.c src/compat_win.c; then
         run file-mods-test
     fi

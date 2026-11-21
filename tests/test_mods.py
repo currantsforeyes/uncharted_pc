@@ -60,7 +60,8 @@ class ModTests(unittest.TestCase):
         self.assertEqual(mods.selected(self.moddir, config), ['B', 'C'])
 
     def test_no_mod_returns_original_game(self):
-        self.assertEqual(mods.build_overlay(self.game, self.root / 'out', []), self.game)
+        # samefile: a runner's temp folder can come back as its 8.3 short name (RUNNER~1).
+        self.assertTrue(os.path.samefile(mods.build_overlay(self.game, self.root / 'out', []), self.game))
         self.assertFalse((self.root / 'out').exists())
 
     def test_directory_conflict_does_not_modify_base(self):

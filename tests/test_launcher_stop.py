@@ -191,6 +191,7 @@ class ProcessTreeFallbackTests(unittest.TestCase):
             launcher.terminate_process_tree(process)
         run.assert_not_called()
 
+    @unittest.skipUnless(os.name == 'nt', 'taskkill is the Windows fallback for stopping the game')
     def test_taskkill_targets_pid_and_descendants(self):
         process = mock.Mock(pid=2468)
         process.poll.return_value = None
