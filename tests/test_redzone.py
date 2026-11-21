@@ -114,14 +114,21 @@ class SiteTables(unittest.TestCase):
         for store in (0x63df24, 0x63e0cd, 0x63e0e0, 0x63e0e9, 0x63e0fe, 0x63e15a, 0x63e1b3, 0x63e1b8):
             self.assertIn(store, self.stores(u1), hex(store))
 
-    def test_sites_do_not_overlap_runtime_guest_patches(self):
+    def test_runtime_guest_patches_fit_their_patterns(self):
+        """The callback table matches code by pattern (since the #396 hooks), so a patch's slot has
+        to lie inside the bytes that were matched. The old check compared absolute offsets with the
+        red-zone tables, which a pattern cannot give; the red-zone pass also runs last and moves
+        nothing a patch already wrote."""
         source = (ROOT / 'src' / 'runtime_pad.c').read_text(encoding='utf-8')
-        patched = [int(m, 16) for m in re.findall(r'\{"[^"]+",(0x[0-9a-f]+),', source)]
-        self.assertTrue(patched)
-        for table in self.tables:
-            for offset, original, _ in table['sites']:
-                end = offset + len(original) // 2
-                self.assertFalse(any(offset - 64 < p < end for p in patched), (table['executable'], hex(offset)))
+        start = source.index('guest_callbacks[]={')
+        body = source[start:source.index('};', start)]
+        entries = re.findall(r'\{\s*"([^"]*)"\s*,\s*((?:"[^"]*"\s*)+),\s*(0x[0-9a-fA-F]+|\d+)\s*,\s*(\d+)',
+                             body, re.S)
+        self.assertGreater(len(entries), 20)
+        for name, pattern, offset, length in entries:
+            size = len(''.join(re.findall(r'"([^"]*)"', pattern)).split())
+            self.assertGreater(int(length), 0, name)
+            self.assertLessEqual(int(offset, 0) + int(length), size, name)
 
 
 @unittest.skipUnless(os.name == 'nt', 'Windows exception dispatch')
