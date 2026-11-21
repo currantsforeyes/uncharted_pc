@@ -1,8 +1,8 @@
 name: tests
 
 # The fork's own guard rail: the Python side (launcher, run.py, preparation scripts, the tests
-# that read the C tables) on every push, on both platforms. The C build needs MSYS2 clang, the
-# Vulkan SDK and the GPU submodules, so it stays a local step for now.
+# that read the C tables) on every push on both platforms, and the C tests under the MSYS2 CLANG64
+# toolchain that builds the Windows package. Neither needs a GPU or game files.
 
 on:
   push:
