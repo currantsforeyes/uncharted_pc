@@ -664,6 +664,7 @@ static void __attribute__((ms_abi)) cue_table_pretouch(uint64_t table, uint64_t 
         const uint8_t *at=(const uint8_t *)(uintptr_t)(page<table ? table : page);
         __asm__ volatile("lock orb $0, (%0)" : : "r"(at) : "memory","cc");
     }
+}
 /* U2 Chapter Select weapons (issue #16, 2026-11-06): the menu's Chapter Select plays the chapter's
  * task group (PlayTask, mode 1). PlayTask first resets the player's settings to the default set
  * (459d0e4e: only the .45 Defender, 40 rounds) and then applies the weapon set of the task it played
