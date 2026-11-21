@@ -56,8 +56,9 @@ packaged build.
 
 `python -m unittest discover -s tests -q` is green on Windows. Suites that drive the Linux
 `run.sh` and the AppImage driver discovery are skipped on Windows, and the symlink tests skip when
-the OS does not allow creating links (Windows needs Developer Mode). CI runs the suite on
-windows-latest and ubuntu-latest (`.github/workflows/tests.yml`).
+the OS does not allow creating links (Windows needs Developer Mode). `.github/workflows/tests.yml`
+runs the suite on windows-latest and ubuntu-latest; it needs Actions enabled for the repository
+(Settings -> Actions -> General).
 
 ## Not carried
 
