@@ -13,9 +13,12 @@ cd -- "$(dirname -- "$0")/.."
 mkdir -p out/tests
 
 windows=0
-case $(uname -s) in
-MINGW*|MSYS*)
-    windows=1
+case "${OSTYPE:-}:${MSYSTEM:-}" in
+*msys*|*cygwin*|*mingw*|*MSYS*|*MINGW*) windows=1;;
+esac
+echo "C tests: uname=$(uname -s 2>&1) OSTYPE=${OSTYPE:-} MSYSTEM=${MSYSTEM:-}"
+echo "C tests: PATH=$PATH"
+if [[ $windows == 1 ]]; then
     # shellcheck source=../msys2-env.sh
     source ./msys2-env.sh
     CC=${CC:-clang}
@@ -25,17 +28,15 @@ MINGW*|MSYS*)
     extra="-mwindows"
     nohigh="-Wl,--disable-high-entropy-va"
     minimal=${1:-${BB_TEST_MINIMAL:-0}}
-    ;;
-*)
+else
     CC=${CC:-$(command -v cc || command -v gcc)}
     libs="-lm -pthread"
     extra=
     nohigh=
     minimal=${1:-${BB_TEST_MINIMAL:-0}}
-    ;;
-esac
+fi
 if [[ $minimal == --minimal ]]; then minimal=1; else minimal=0; fi
-echo "C tests: $(uname -s), CC=$CC, pkg-config=$(command -v pkg-config || echo none), minimal=$minimal"
+echo "C tests: windows=$windows, CC=$CC, pkg-config=$(command -v pkg-config || echo none), minimal=$minimal"
 
 if [[ ! -f third_party/LibAtrac9/C/src/libatrac9.h ]]; then
     echo 'LibAtrac9 is missing: git submodule update --init --recursive' >&2
@@ -103,11 +104,18 @@ run() {
 
 build() {
     local name=$1; shift
-    if ! "$CC" -std=c11 -O1 -g -Wall -Wextra -pthread -I. -Isrc \
+    "$CC" -std=c11 -O1 -g -Wall -Wextra -pthread -I. -Isrc \
         "${pkg_includes[@]+"${pkg_includes[@]}"}" \
-        "$@" $libs $extra $nohigh -o "out/tests/$name" 2> "out/tests/$name.build.log"; then
-        printf 'BUILD FAILED  %s (out/tests/%s.build.log)\n' "$name" "$name" >&2
-        cat "out/tests/$name.build.log" >&2
+        "$@" $libs $extra $nohigh -o "out/tests/$name" 2> "out/tests/$name.build.log"
+    local code=$?
+    if [[ $code -ne 0 ]]; then
+        printf 'BUILD FAILED  %s (exit %d, log out/tests/%s.build.log)\n' "$name" "$code" "$name" >&2
+        if [[ -f out/tests/$name.build.log ]]; then
+            while IFS= read -r line || [[ -n $line ]]; do printf '%s\n' "$line"; done \
+                < "out/tests/$name.build.log" >&2
+        else
+            printf 'no build log written\n' >&2
+        fi
         failed=1
         return 1
     fi
